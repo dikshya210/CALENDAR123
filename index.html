@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendar with Seasonal Animation</title>
+  <style>
+    /* General body styles */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    /* Container for the calendar */
+    .calendar-container {
+      width: 90%;
+      max-width: 600px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+      padding: 10px;
+    }
+
+    /* Header with the month navigation */
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    #month-year {
+      font-size: 1.5rem;
+      color: #333;
+    }
+
+    /* Button styles */
+    button {
+      background: transparent;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    /* Grid layout for the days of the week and dates */
+    .calendar-days,
+    .calendar-dates {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      margin-top: 10px;
+    }
+
+    /* Styling for the days and dates */
+    .calendar-days div,
+    .calendar-dates div {
+      text-align: center;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 0.9rem;
+    }
+
+    /* Highlight today's date */
+    .calendar-dates div.today {
+      background: rgba(0, 128, 255, 0.8);
+      color: white;
+      font-weight: bold;
+    }
+
+    /* Animation for falling items (snowflakes, leaves, flowers) */
+    #seasonal-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .falling-item {
+      position: absolute;
+      animation: fall 10s linear infinite;
+    }
+
+    @keyframes fall {
+      0% {
+        transform: translateY(-10vh) rotate(0);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(110vh) rotate(360deg);
+        opacity: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="calendar-container">
+    <div class="calendar-header">
+      <button id="prev-month">❮</button>
+      <h2 id="month-year"></h2>
+      <button id="next-month">❯</button>
+    </div>
+    <div class="calendar-days">
+      <div>Sun</div>
+      <div>Mon</div>
+      <div>Tue</div>
+      <div>Wed</div>
+      <div>Thu</div>
+      <div>Fri</div>
+      <div>Sat</div>
+    </div>
+    <div class="calendar-dates" id="calendar-dates"></div>
+  </div>
+
+  <div id="seasonal-animation"></div>
+
+  <script>
+    const monthYear = document.getElementById("month-year");
+    const calendarDates = document.getElementById("calendar-dates");
+    const prevMonthBtn = document.getElementById("prev-month");
+    const nextMonthBtn = document.getElementById("next-month");
+    const seasonalAnimation = document.getElementById("seasonal-animation");
+
+    const months = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+
+    const seasons = {
+      Winter: ["December", "January", "February"],
+      Spring: ["March", "April", "May"],
+      Summer: ["June", "July", "August"],
+      Autumn: ["September", "October", "November"]
+    };
+
+    const seasonColors = {
+      Winter: "rgba(173, 216, 230, 0.5)", // Light Blue
+      Spring: "rgba(144, 238, 144, 0.5)", // Light Green
+      Summer: "rgba(255, 223, 186, 0.5)", // Peach
+      Autumn: "rgba(255, 228, 181, 0.5)"  // Wheat
+    };
+
+    let currentDate = new Date();
+    let animationInterval;
+
+    function renderCalendar(date) {
+      const year = date.getFullYear();
+      const month = date.getMonth();
+      const firstDay = new Date(year, month, 1).getDay();
+      const lastDate = new Date(year, month + 1, 0).getDate();
+
+      monthYear.textContent = `${months[month]} ${year}`;
+      calendarDates.innerHTML = "";
+
+      // Empty boxes for the days before the start of the month
+      for (let i = 0; i < firstDay; i++) {
+        const blankDiv = document.createElement("div");
+        blankDiv.classList.add("blank");
+        calendarDates.appendChild(blankDiv);
+      }
+
+      // Create all the date divs for the current month
+      for (let i = 1; i <= lastDate; i++) {
+        const dateDiv = document.createElement("div");
+        dateDiv.textContent = i;
+
+        // Highlight today's date
+        if (
+          i === new Date().getDate() &&
+          month === new Date().getMonth() &&
+          year === new Date().getFullYear()
+        ) {
+          dateDiv.classList.add("today");
+        }
+
+        calendarDates.appendChild(dateDiv);
+      }
+
+      setSeasonalAnimation(month);
+    }
+
+    function setSeasonalAnimation(month) {
+      clearInterval(animationInterval);
+      seasonalAnimation.innerHTML = "";
+      const currentMonth = months[month];
+      document.body.style.background = seasonColors[getSeason(currentMonth)];
+
+      if (seasons.Winter.includes(currentMonth)) {
+        startFallingAnimation("❄", "snowflake", 50);
+      } else if (seasons.Spring.includes(currentMonth)) {
+        startFallingAnimation("🌸", "flower", 50);
+      } else if (seasons.Summer.includes(currentMonth)) {
+        startFallingAnimation("🌼", "flower", 50);
+      } else if (seasons.Autumn.includes(currentMonth)) {
+        startFallingAnimation("🍂", "leaf", 50);
+      }
+    }
+
+    function getSeason(month) {
+      for (const [season, months] of Object.entries(seasons)) {
+        if (months.includes(month)) return season;
+      }
+    }
+
+    function startFallingAnimation(symbol, className, maxItems) {
+      let count = 0;
+      animationInterval = setInterval(() => {
+        if (count >= maxItems) return clearInterval(animationInterval);
+
+        const element = document.createElement("div");
+        element.textContent = symbol;
+        element.classList.add("falling-item");
+        element.style.left = Math.random() * window.innerWidth + "px";
+        element.style.fontSize = Math.random() * 20 + 10 + "px";
+        element.style.animationDuration = Math.random() * 5 + 5 + "s";
+        seasonalAnimation.appendChild(element);
+
+        setTimeout(() => element.remove(), 10000);
+        count++;
+      }, 200);
+    }
+
+    prevMonthBtn.addEventListener("click", () => {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      renderCalendar(currentDate);
+    });
+
+    nextMonthBtn.addEventListener("click", () => {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      renderCalendar(currentDate);
+    });
+
+    renderCalendar(currentDate);
+  </script>
+</body>
+</html>
